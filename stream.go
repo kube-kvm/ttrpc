@@ -24,7 +24,7 @@ import (
 type streamID uint32
 
 type streamMessage struct {
-	header  messageHeader
+	header  MessageHeader
 	payload []byte
 }
 

@@ -60,22 +60,22 @@ const (
 	flagNoData       uint8 = 0x4
 )
 
-// messageHeader represents the fixed-length message header of 10 bytes sent
+// MessageHeader represents the fixed-length message header of 10 bytes sent
 // with every request.
-type messageHeader struct {
+type MessageHeader struct {
 	Length   uint32      // length excluding this header. b[:4]
 	StreamID uint32      // identifies which request stream message is a part of. b[4:8]
 	Type     messageType // message type b[8]
 	Flags    uint8       // type specific flags b[9]
 }
 
-func readMessageHeader(p []byte, r io.Reader) (messageHeader, error) {
+func readMessageHeader(p []byte, r io.Reader) (MessageHeader, error) {
 	_, err := io.ReadFull(r, p[:messageHeaderLength])
 	if err != nil {
-		return messageHeader{}, err
+		return MessageHeader{}, err
 	}
 
-	return messageHeader{
+	return MessageHeader{
 		Length:   binary.BigEndian.Uint32(p[:4]),
 		StreamID: binary.BigEndian.Uint32(p[4:8]),
 		Type:     messageType(p[8]),
@@ -83,7 +83,7 @@ func readMessageHeader(p []byte, r io.Reader) (messageHeader, error) {
 	}, nil
 }
 
-func writeMessageHeader(w io.Writer, p []byte, mh messageHeader) error {
+func WriteMessageHeader(w io.Writer, p []byte, mh MessageHeader) error {
 	binary.BigEndian.PutUint32(p[:4], mh.Length)
 	binary.BigEndian.PutUint32(p[4:8], mh.StreamID)
 	p[8] = byte(mh.Type)
@@ -117,10 +117,10 @@ func newChannel(conn net.Conn) *channel {
 // returned will be valid and caller should send that along to
 // the correct consumer. The bytes on the underlying channel
 // will be discarded.
-func (ch *channel) recv() (messageHeader, []byte, error) {
+func (ch *channel) recv() (MessageHeader, []byte, error) {
 	mh, err := readMessageHeader(ch.hrbuf[:], ch.br)
 	if err != nil {
-		return messageHeader{}, nil, err
+		return MessageHeader{}, nil, err
 	}
 
 	if mh.Length > uint32(messageLengthMax) {
@@ -135,7 +135,7 @@ func (ch *channel) recv() (messageHeader, []byte, error) {
 	if mh.Length > 0 {
 		p = ch.getmbuf(int(mh.Length))
 		if _, err := io.ReadFull(ch.br, p); err != nil {
-			return messageHeader{}, nil, fmt.Errorf("failed reading message: %w", err)
+			return MessageHeader{}, nil, fmt.Errorf("failed reading message: %w", err)
 		}
 	}
 
@@ -147,7 +147,7 @@ func (ch *channel) send(streamID uint32, t messageType, flags uint8, p []byte) e
 	//if len(p) > messageLengthMax {
 	//	return status.Errorf(codes.InvalidArgument, "refusing to send, message length %v exceed maximum message size of %v", len(p), messageLengthMax)
 	//}
-	if err := writeMessageHeader(ch.bw, ch.hwbuf[:], messageHeader{Length: uint32(len(p)), StreamID: streamID, Type: t, Flags: flags}); err != nil {
+	if err := WriteMessageHeader(ch.bw, ch.hwbuf[:], MessageHeader{Length: uint32(len(p)), StreamID: streamID, Type: t, Flags: flags}); err != nil {
 		return err
 	}
 

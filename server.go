@@ -470,7 +470,7 @@ func (c *serverConn) run(sctx context.Context) {
 					}
 					return nil
 				}
-				sh, err := c.server.services.handle(ctx, &req, respond)
+				sh, err := c.server.services.handle(ctx, id, &req, respond)
 				if err != nil {
 					status, _ := status.FromError(err)
 					if !sendStatus(mh.StreamID, status) {
