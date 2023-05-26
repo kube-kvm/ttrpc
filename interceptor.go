@@ -21,7 +21,6 @@ import "context"
 // UnaryServerInfo provides information about the server request
 type UnaryServerInfo struct {
 	FullMethod string
-	ID         uint32
 }
 
 // UnaryClientInfo provides information about the client request

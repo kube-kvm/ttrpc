@@ -456,6 +456,8 @@ func (c *serverConn) run(sctx context.Context) {
 				ch.putmbuf(p)
 
 				id := mh.StreamID
+				ctx = context.WithValue(ctx, "ttrpc_stream_id", mh.StreamID)
+				ctx = context.WithValue(ctx, "ttrpc_conn", c.conn)
 				respond := func(status *status.Status, data []byte, streaming, closeStream bool) error {
 					select {
 					case responses <- response{
@@ -470,7 +472,7 @@ func (c *serverConn) run(sctx context.Context) {
 					}
 					return nil
 				}
-				sh, err := c.server.services.handle(ctx, id, &req, respond)
+				sh, err := c.server.services.handle(ctx, &req, respond)
 				if err != nil {
 					status, _ := status.FromError(err)
 					if !sendStatus(mh.StreamID, status) {
