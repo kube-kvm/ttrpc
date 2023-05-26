@@ -320,6 +320,9 @@ func (c *serverConn) close() error {
 	return nil
 }
 
+type RequestIDContext struct{}
+type RequestConnContext struct{}
+
 func (c *serverConn) run(sctx context.Context) {
 	type (
 		response struct {
@@ -456,8 +459,8 @@ func (c *serverConn) run(sctx context.Context) {
 				ch.putmbuf(p)
 
 				id := mh.StreamID
-				ctx = context.WithValue(ctx, "ttrpc_stream_id", mh.StreamID)
-				ctx = context.WithValue(ctx, "ttrpc_conn", c.conn)
+				ctx = context.WithValue(ctx, RequestIDContext{}, mh.StreamID)
+				ctx = context.WithValue(ctx, RequestConnContext{}, c.conn)
 				respond := func(status *status.Status, data []byte, streaming, closeStream bool) error {
 					select {
 					case responses <- response{
