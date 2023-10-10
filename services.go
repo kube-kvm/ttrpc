@@ -101,7 +101,8 @@ func (s *serviceSet) streamCall(ctx context.Context, stream StreamHandler, info 
 	return
 }
 
-func (s *serviceSet) handle(ctx context.Context, req *Request, respond func(*status.Status, []byte, bool, bool) error) (*streamHandler, error) {
+func (s *serviceSet) handle(ctx context.Context, reqInfo *RequestInfo, req *Request,
+	respond func(*status.Status, []byte, bool, bool) error) (*streamHandler, error) {
 	srv, ok := s.services[req.Service]
 	if !ok {
 		return nil, status.Errorf(codes.Unimplemented, "service %v", req.Service)
@@ -113,7 +114,8 @@ func (s *serviceSet) handle(ctx context.Context, req *Request, respond func(*sta
 			defer cancel()
 
 			info := &UnaryServerInfo{
-				FullMethod: fullPath(req.Service, req.Method),
+				FullMethod:  fullPath(req.Service, req.Method),
+				RequestInfo: reqInfo,
 			}
 			p, st := s.unaryCall(ctx, method, info, req.Payload)
 

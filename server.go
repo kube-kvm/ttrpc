@@ -320,9 +320,11 @@ func (c *serverConn) close() error {
 	return nil
 }
 
-type RequestIDContext struct{}
-type RequestContext struct{}
-type RequestConnContext struct{}
+type RequestInfo struct {
+	RequestID   uint32
+	Request     *Request
+	RequestConn net.Conn
+}
 
 func (c *serverConn) run(sctx context.Context) {
 	type (
@@ -460,9 +462,11 @@ func (c *serverConn) run(sctx context.Context) {
 				ch.putmbuf(p)
 
 				id := mh.StreamID
-				ctx = context.WithValue(ctx, RequestIDContext{}, mh.StreamID)
-				ctx = context.WithValue(ctx, RequestContext{}, &req)
-				ctx = context.WithValue(ctx, RequestConnContext{}, c.conn)
+				requestInfo := RequestInfo{
+					RequestID:   mh.StreamID,
+					Request:     &req,
+					RequestConn: c.conn,
+				}
 				respond := func(status *status.Status, data []byte, streaming, closeStream bool) error {
 					select {
 					case responses <- response{
@@ -477,7 +481,7 @@ func (c *serverConn) run(sctx context.Context) {
 					}
 					return nil
 				}
-				sh, err := c.server.services.handle(ctx, &req, respond)
+				sh, err := c.server.services.handle(ctx, &requestInfo, &req, respond)
 				if err != nil {
 					status, _ := status.FromError(err)
 					if !sendStatus(mh.StreamID, status) {
